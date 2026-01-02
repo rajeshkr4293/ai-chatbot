@@ -1,0 +1,7 @@
+spring.application.name=ai-chatbot
+
+# Ollama configuration
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=gpt-oss
+
+server.port=8080
