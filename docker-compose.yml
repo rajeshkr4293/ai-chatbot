@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  ai-chatbot:
+    image: ai-chatbot
+    container_name: ai-chatbot
+    ports:
+      - "8080:8080"
+    environment:
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: gpt-oss
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    command: serve
+
+volumes:
+  ollama_data:
