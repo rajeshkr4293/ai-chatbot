@@ -10,17 +10,17 @@ pipeline {
         }
 
         stage('Build with Maven (Docker)') {
-            steps {
-                sh '''
-                  docker run --rm \
-                    -v "$PWD":/app \
-                    -v "$HOME/.m2":/root/.m2 \
-                    -w /app \
-                    maven:3.9.6-eclipse-temurin-17 \
-                    mvn clean package -DskipTests
-                '''
-            }
-        }
+    steps {
+        sh '''
+          docker run --rm \
+            -v "$PWD":/app \
+            -v "$HOME/.m2":/root/.m2 \
+            maven:3.9.6-eclipse-temurin-17 \
+            mvn -f /app/ai-chatbot/ai-chatbot/pom.xml clean package -DskipTests
+        '''
+    }
+}
+
 
         stage('Build Docker Image') {
             steps {
