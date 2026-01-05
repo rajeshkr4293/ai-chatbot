@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        AWS_DEFAULT_REGION = 'us-east-1'
         IMAGE_NAME = 'ai-chatbot'
+        DOCKER_CONFIG = "${WORKSPACE}/.docker"
     }
 
     stages {
@@ -29,12 +29,15 @@ pipeline {
             agent {
                 docker {
                     image 'docker:26-cli'
-                    args '-v /var/run/docker.sock:/var/run/docker.sock'
+                    args '''
+                      --entrypoint=""
+                      -v /var/run/docker.sock:/var/run/docker.sock
+                    '''
                 }
             }
             steps {
                 sh '''
-                  mkdir -p $WORKSPACE/.docker
+                  mkdir -p "$DOCKER_CONFIG"
                   docker build -t ${IMAGE_NAME}:latest .
                 '''
             }
@@ -52,9 +55,7 @@ pipeline {
                     string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
-                    sh '''
-                      aws sts get-caller-identity
-                    '''
+                    sh 'aws sts get-caller-identity'
                 }
             }
         }
