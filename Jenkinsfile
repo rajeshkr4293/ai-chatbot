@@ -2,29 +2,38 @@ pipeline {
     agent any
 
     stages {
+
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/rajeshkr4293/ai-chatbot.git'
+                checkout scm
             }
         }
 
-        stage('Build Maven') {
+        stage('Build with Maven (Docker)') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh '''
+                  docker run --rm \
+                    -v "$PWD":/app \
+                    -v "$HOME/.m2":/root/.m2 \
+                    -w /app \
+                    maven:3.9.6-eclipse-temurin-17 \
+                    mvn clean package -DskipTests
+                '''
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t ai-chatbot:latest .'
+                sh '''
+                  docker build -t ai-chatbot:latest .
+                '''
             }
         }
     }
 
     post {
         success {
-            echo '✅ CI pipeline completed successfully'
+            echo '✅ CI pipeline successful'
         }
         failure {
             echo '❌ CI pipeline failed'
