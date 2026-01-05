@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        AWS_REGION = 'us-east-1'
-        ECR_REPO = '582360921079.dkr.ecr.us-east-1.amazonaws.com/ai-chatbot'
-    }
-
     stages {
 
         stage('Checkout') {
@@ -14,32 +9,35 @@ pipeline {
             }
         }
 
-      stage('Build with Maven') {
-    steps {
-        sh 'chmod +x mvnw'
-        sh './mvnw clean package -DskipTests'
-    }
-}
+        stage('Build with Maven') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
 
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t ai-chatbot:latest .'
+            }
+        }
 
-
-        stage('Build & Push to ECR') {
-    steps {
-        withCredentials([[
-            $class: 'AmazonWebServicesCredentialsBinding',
-            credentialsId: 'aws-credentials'
-        ]]) {
-            sh '''
-            docker run --rm \
-              -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-              -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-              -e AWS_DEFAULT_REGION=us-east-1 \
-              amazon/aws-cli aws --version
-            '''
+        stage('AWS CLI Check') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-credentials'
+                ]]) {
+                    sh '''
+                    docker run --rm \
+                      -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+                      -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+                      -e AWS_DEFAULT_REGION=us-east-1 \
+                      amazon/aws-cli aws --version
+                    '''
+                }
+            }
         }
     }
-}
-
 
     post {
         success {
