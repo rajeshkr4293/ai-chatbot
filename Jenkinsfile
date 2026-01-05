@@ -24,27 +24,22 @@ pipeline {
 
 
         stage('Build & Push to ECR') {
-            steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-credentials'
-                ]]) {
-                    sh '''
-                    aws --version
-
-                    aws ecr get-login-password --region $AWS_REGION \
-                    | docker login --username AWS --password-stdin $ECR_REPO
-
-                    docker build -t ai-chatbot:latest .
-
-                    docker tag ai-chatbot:latest $ECR_REPO:latest
-
-                    docker push $ECR_REPO:latest
-                    '''
-                }
-            }
+    steps {
+        withCredentials([[
+            $class: 'AmazonWebServicesCredentialsBinding',
+            credentialsId: 'aws-credentials'
+        ]]) {
+            sh '''
+            docker run --rm \
+              -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+              -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+              -e AWS_DEFAULT_REGION=us-east-1 \
+              amazon/aws-cli aws --version
+            '''
         }
     }
+}
+
 
     post {
         success {
