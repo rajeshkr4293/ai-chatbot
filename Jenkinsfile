@@ -34,30 +34,24 @@ pipeline {
 
 
         stage('AWS CLI Check') {
-            agent {
-                docker {
-                    image 'amazon/aws-cli'
-                }
-            }
-            steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-credentials'
-                ]]) {
-                    sh '''
-                      aws sts get-caller-identity
-                    '''
-                }
-            }
+    agent {
+        docker {
+            image 'amazon/aws-cli'
+            args '''
+              --entrypoint=""
+              -e AWS_ACCESS_KEY_ID
+              -e AWS_SECRET_ACCESS_KEY
+              -e AWS_DEFAULT_REGION=us-east-1
+            '''
         }
     }
-
-    post {
-        success {
-            echo '✅ CI pipeline SUCCESS'
-        }
-        failure {
-            echo '❌ CI pipeline FAILED'
+    steps {
+        withCredentials([
+            string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
+            string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
+        ]) {
+            sh 'aws sts get-caller-identity'
         }
     }
 }
+
