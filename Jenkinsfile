@@ -1,14 +1,21 @@
 pipeline {
-    agent {
-        docker {
-            image 'maven:3.9.6-eclipse-temurin-17'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
+    agent any
 
     stages {
 
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Build with Maven') {
+            agent {
+                docker {
+                    image 'maven:3.9.6-eclipse-temurin-17'
+                    args '-v $HOME/.m2:/root/.m2'
+                }
+            }
             steps {
                 sh 'mvn clean package -DskipTests'
             }
@@ -23,10 +30,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ CI pipeline successful'
+            echo '✅ CI pipeline SUCCESS'
         }
         failure {
-            echo '❌ CI pipeline failed'
+            echo '❌ CI pipeline FAILED'
         }
     }
 }
