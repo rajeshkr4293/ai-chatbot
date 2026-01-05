@@ -1,23 +1,54 @@
-stage('Build & Push to ECR') {
-    steps {
-        withCredentials([[
-            $class: 'AmazonWebServicesCredentialsBinding',
-            credentialsId: 'aws-credentials'
-        ]]) {
-            sh '''
-            aws --version
+pipeline {
+    agent any
 
-            aws ecr get-login-password --region us-east-1 \
-            | docker login --username AWS --password-stdin 582360921079.dkr.ecr.us-east-1.amazonaws.com
+    environment {
+        AWS_REGION = 'us-east-1'
+        ECR_REPO = '582360921079.dkr.ecr.us-east-1.amazonaws.com/ai-chatbot'
+    }
 
-            docker build -t ai-chatbot:latest .
+    stages {
 
-            docker tag ai-chatbot:latest \
-            582360921079.dkr.ecr.us-east-1.amazonaws.com/ai-chatbot:latest
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
 
-            docker push \
-            582360921079.dkr.ecr.us-east-1.amazonaws.com/ai-chatbot:latest
-            '''
+        stage('Build with Maven') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+
+        stage('Build & Push to ECR') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-credentials'
+                ]]) {
+                    sh '''
+                    aws --version
+
+                    aws ecr get-login-password --region $AWS_REGION \
+                    | docker login --username AWS --password-stdin $ECR_REPO
+
+                    docker build -t ai-chatbot:latest .
+
+                    docker tag ai-chatbot:latest $ECR_REPO:latest
+
+                    docker push $ECR_REPO:latest
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ CI pipeline SUCCESS'
+        }
+        failure {
+            echo '❌ CI pipeline FAILED'
         }
     }
 }
