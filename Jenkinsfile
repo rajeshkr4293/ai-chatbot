@@ -14,11 +14,14 @@ pipeline {
             }
         }
 
-        stage('Build with Maven') {
-            steps {
-                sh 'mvn clean package -DskipTests'
-            }
-        }
+      stage('Build with Maven') {
+    steps {
+        sh 'chmod +x mvnw'
+        sh './mvnw clean package -DskipTests'
+    }
+}
+
+
 
         stage('Build & Push to ECR') {
             steps {
