@@ -1,39 +1,23 @@
-pipeline {
-    agent any
+stage('Build & Push to ECR') {
+    steps {
+        withCredentials([[
+            $class: 'AmazonWebServicesCredentialsBinding',
+            credentialsId: 'aws-credentials'
+        ]]) {
+            sh '''
+            aws --version
 
-    stages {
+            aws ecr get-login-password --region us-east-1 \
+            | docker login --username AWS --password-stdin 582360921079.dkr.ecr.us-east-1.amazonaws.com
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
+            docker build -t ai-chatbot:latest .
 
-        stage('Build with Maven') {
-            agent {
-                docker {
-                    image 'maven:3.9.6-eclipse-temurin-17'
-                    args '-v $HOME/.m2:/root/.m2'
-                }
-            }
-            steps {
-                sh 'mvn clean package -DskipTests'
-            }
-        }
+            docker tag ai-chatbot:latest \
+            582360921079.dkr.ecr.us-east-1.amazonaws.com/ai-chatbot:latest
 
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t ai-chatbot:latest .'
-            }
-        }
-    }
-
-    post {
-        success {
-            echo '✅ CI pipeline SUCCESS'
-        }
-        failure {
-            echo '❌ CI pipeline FAILED'
+            docker push \
+            582360921079.dkr.ecr.us-east-1.amazonaws.com/ai-chatbot:latest
+            '''
         }
     }
 }
