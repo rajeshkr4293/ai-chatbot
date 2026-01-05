@@ -1,24 +1,16 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'maven:3.9.6-eclipse-temurin-17'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
 
     stages {
 
-        stage('Checkout') {
+        stage('Build with Maven') {
             steps {
-                checkout scm
-            }
-        }
-
-        stage('Build with Maven (Docker)') {
-            steps {
-                sh '''
-                docker run --rm \
-                  -v "$PWD":/app \
-                  -v "$HOME/.m2":/root/.m2 \
-                  -w /app \
-                  maven:3.9.6-eclipse-temurin-17 \
-                  mvn clean package -DskipTests
-                '''
+                sh 'mvn clean package -DskipTests'
             }
         }
 
@@ -39,7 +31,7 @@ pipeline {
                       -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
                       -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
                       -e AWS_DEFAULT_REGION=us-east-1 \
-                      amazon/aws-cli aws --version
+                      amazon/aws-cli aws sts get-caller-identity
                     '''
                 }
             }
