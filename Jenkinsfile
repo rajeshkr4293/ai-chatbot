@@ -1,7 +1,18 @@
 pipeline {
     agent any
 
+    environment {
+        AWS_DEFAULT_REGION = 'us-east-1'
+        IMAGE_NAME = 'ai-chatbot'
+    }
+
     stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
 
         stage('Build with Maven') {
             agent {
@@ -14,44 +25,47 @@ pipeline {
             }
         }
 
-       stage('Build Docker Image') {
-    agent {
-        docker {
-            image 'docker:26-cli'
-            args '''
-              -v /var/run/docker.sock:/var/run/docker.sock
-              -e DOCKER_CONFIG=$WORKSPACE/.docker
-            '''
+        stage('Build Docker Image') {
+            agent {
+                docker {
+                    image 'docker:26-cli'
+                    args '-v /var/run/docker.sock:/var/run/docker.sock'
+                }
+            }
+            steps {
+                sh '''
+                  mkdir -p $WORKSPACE/.docker
+                  docker build -t ${IMAGE_NAME}:latest .
+                '''
+            }
         }
-    }
-    steps {
-        sh '''
-          mkdir -p $WORKSPACE/.docker
-          docker build -t ai-chatbot:latest .
-        '''
-    }
-}
-
 
         stage('AWS CLI Check') {
-    agent {
-        docker {
-            image 'amazon/aws-cli'
-            args '''
-              --entrypoint=""
-              -e AWS_ACCESS_KEY_ID
-              -e AWS_SECRET_ACCESS_KEY
-              -e AWS_DEFAULT_REGION=us-east-1
-            '''
+            agent {
+                docker {
+                    image 'amazon/aws-cli'
+                    args '--entrypoint=""'
+                }
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                      aws sts get-caller-identity
+                    '''
+                }
+            }
         }
     }
-    steps {
-        withCredentials([
-            string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
-            string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
-        ]) {
-            sh 'aws sts get-caller-identity'
+
+    post {
+        success {
+            echo '✅ CI pipeline SUCCESS'
+        }
+        failure {
+            echo '❌ CI pipeline FAILED'
         }
     }
 }
-
